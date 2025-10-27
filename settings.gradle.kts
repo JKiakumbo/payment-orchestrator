@@ -3,7 +3,7 @@ plugins {
 }
 rootProject.name = "payment-orchestrator"
 include("services")
-include("services:common")
+include("services:payment-service")
 include("services:fraud-service")
 include("services:funds-service")
 include("services:processor-service")
