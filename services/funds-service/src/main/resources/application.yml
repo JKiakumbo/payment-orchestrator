@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: funds-service
+  datasource:
+    url: jdbc:postgresql://localhost:5434/funds_service
+    username: postgres
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: funds-service
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+    producer:
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  level:
+    dev.jkiakumbo.fundsservice: INFO
+    org.springframework.kafka: INFO
+    org.hibernate.SQL: DEBUG
+
+funds:
+  reservation:
+    timeout-minutes: 30
+  retry:
+    max-attempts: 3
+    backoff-delay: 1000
+  initial-balance: 10000.00
