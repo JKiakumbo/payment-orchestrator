@@ -1,14 +1,24 @@
-package dev.jkiakumbo.paymentorchestrator.state
+package dev.jkiakumbo.paymentorchestrator.orchestratorservice.state
 
+import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Bean
+import org.springframework.messaging.Message
+import org.springframework.statemachine.StateMachine
+import org.springframework.statemachine.annotation.OnStateChanged
+import org.springframework.statemachine.annotation.WithStateMachine
 import org.springframework.statemachine.config.EnableStateMachine
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer
+import org.springframework.statemachine.listener.StateMachineListenerAdapter
+import org.springframework.statemachine.state.State
 import org.springframework.stereotype.Component
 
 @Component
 @EnableStateMachine
 class PaymentStateMachineConfig : StateMachineConfigurerAdapter<PaymentState, PaymentEvent>() {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     override fun configure(states: StateMachineStateConfigurer<PaymentState, PaymentEvent>) {
         states
@@ -32,10 +42,13 @@ class PaymentStateMachineConfig : StateMachineConfigurerAdapter<PaymentState, Pa
 
     override fun configure(transitions: StateMachineTransitionConfigurer<PaymentState, PaymentEvent>) {
         transitions
+            // Initial transition
             .withExternal()
             .source(PaymentState.INITIATED).target(PaymentState.FRAUD_CHECK_PENDING)
             .event(PaymentEvent.FRAUD_CHECK_REQUESTED)
             .and()
+
+            // Fraud check transitions
             .withExternal()
             .source(PaymentState.FRAUD_CHECK_PENDING).target(PaymentState.FRAUD_CHECK_COMPLETED)
             .event(PaymentEvent.FRAUD_CHECK_APPROVED)
@@ -44,6 +57,8 @@ class PaymentStateMachineConfig : StateMachineConfigurerAdapter<PaymentState, Pa
             .source(PaymentState.FRAUD_CHECK_PENDING).target(PaymentState.FRAUD_CHECK_FAILED)
             .event(PaymentEvent.FRAUD_CHECK_DECLINED)
             .and()
+
+            // Funds reservation transitions
             .withExternal()
             .source(PaymentState.FRAUD_CHECK_COMPLETED).target(PaymentState.FUNDS_RESERVATION_PENDING)
             .event(PaymentEvent.FUNDS_RESERVATION_REQUESTED)
@@ -56,6 +71,8 @@ class PaymentStateMachineConfig : StateMachineConfigurerAdapter<PaymentState, Pa
             .source(PaymentState.FUNDS_RESERVATION_PENDING).target(PaymentState.FUNDS_RESERVATION_FAILED)
             .event(PaymentEvent.FUNDS_RESERVATION_FAILED)
             .and()
+
+            // Payment execution transitions
             .withExternal()
             .source(PaymentState.FUNDS_RESERVED).target(PaymentState.PROCESSOR_EXECUTION_PENDING)
             .event(PaymentEvent.PROCESSOR_EXECUTION_REQUESTED)
@@ -68,6 +85,8 @@ class PaymentStateMachineConfig : StateMachineConfigurerAdapter<PaymentState, Pa
             .source(PaymentState.PROCESSOR_EXECUTION_PENDING).target(PaymentState.PROCESSOR_EXECUTION_FAILED)
             .event(PaymentEvent.PROCESSOR_EXECUTION_FAILED)
             .and()
+
+            // Ledger update transitions
             .withExternal()
             .source(PaymentState.PROCESSOR_EXECUTED).target(PaymentState.LEDGER_UPDATE_PENDING)
             .event(PaymentEvent.LEDGER_UPDATE_REQUESTED)
@@ -80,6 +99,8 @@ class PaymentStateMachineConfig : StateMachineConfigurerAdapter<PaymentState, Pa
             .source(PaymentState.LEDGER_UPDATE_PENDING).target(PaymentState.LEDGER_UPDATE_FAILED)
             .event(PaymentEvent.LEDGER_UPDATE_FAILED)
             .and()
+
+            // Compensation transitions
             .withExternal()
             .source(PaymentState.FUNDS_RESERVATION_FAILED).target(PaymentState.COMPENSATING)
             .event(PaymentEvent.COMPENSATION_TRIGGERED)
@@ -95,5 +116,52 @@ class PaymentStateMachineConfig : StateMachineConfigurerAdapter<PaymentState, Pa
             .withExternal()
             .source(PaymentState.COMPENSATING).target(PaymentState.COMPENSATED)
             .event(PaymentEvent.COMPENSATION_COMPLETED)
+            .and()
+
+            // Manual retry transitions
+            .withExternal()
+            .source(PaymentState.FRAUD_CHECK_FAILED).target(PaymentState.FRAUD_CHECK_PENDING)
+            .event(PaymentEvent.MANUAL_RETRY)
+            .and()
+            .withExternal()
+            .source(PaymentState.FUNDS_RESERVATION_FAILED).target(PaymentState.FUNDS_RESERVATION_PENDING)
+            .event(PaymentEvent.MANUAL_RETRY)
+            .and()
+            .withExternal()
+            .source(PaymentState.PROCESSOR_EXECUTION_FAILED).target(PaymentState.PROCESSOR_EXECUTION_PENDING)
+            .event(PaymentEvent.MANUAL_RETRY)
+            .and()
+            .withExternal()
+            .source(PaymentState.LEDGER_UPDATE_FAILED).target(PaymentState.LEDGER_UPDATE_PENDING)
+            .event(PaymentEvent.MANUAL_RETRY)
+    }
+
+    @Bean
+    fun stateMachineListener(): StateMachineListenerAdapter<PaymentState, PaymentEvent> {
+        return object : StateMachineListenerAdapter<PaymentState, PaymentEvent>() {
+            override fun stateChanged(from: State<PaymentState, PaymentEvent>?, to: State<PaymentState, PaymentEvent>?) {
+                logger.info("State changed from ${from?.id} to ${to?.id}")
+            }
+
+            override fun eventNotAccepted(event: Message<PaymentEvent>?) {
+                logger.warn("Event not accepted: ${event?.payload}")
+            }
+
+            override fun stateMachineError(stateMachine: StateMachine<PaymentState, PaymentEvent>?, exception: Exception?) {
+                logger.error("State machine error", exception)
+            }
+        }
+    }
+}
+
+@Component
+@WithStateMachine
+class PaymentStateMachineListener {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    @OnStateChanged
+    fun stateChanged(state: State<PaymentState, PaymentEvent>) {
+        logger.debug("Payment state changed to: ${state.id}")
     }
 }
