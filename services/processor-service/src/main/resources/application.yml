@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: processor-service
+  datasource:
+    url: jdbc:postgresql://localhost:5435/processor_service
+    username: postgres
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: processor-service
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+    producer:
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8083
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  level:
+    dev.jkiakumbo.processorservice: INFO
+    org.springframework.kafka: INFO
+    org.hibernate.SQL: DEBUG
+
+processor:
+  retry:
+    max-attempts: 3
+    backoff-delay: 2000
+  timeout:
+    milliseconds: 30000
