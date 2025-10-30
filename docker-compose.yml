@@ -60,9 +60,9 @@ services:
       - payment-network
 
   # --- Database Services ---
-  postgres-payment-orchestrator:
+  postgres-orchestrator-service:
     image: postgres:18
-    container_name: postgres-payment-orchestrator
+    container_name: postgres-orchestrator-service
     environment:
       POSTGRES_DB: payment_orchestrator
       POSTGRES_USER: postgres
@@ -71,7 +71,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_payment_orchestrator_data:/var/lib/postgresql/data
-      - ./init-scripts/init-payment-orchestrator.sql:/docker-entrypoint-initdb.d/init-payment-orchestrator.sql
+      - ./init-scripts/init-orchestrator-service.sql:/docker-entrypoint-initdb.d/init-orchestrator-service.sql
     networks:
       - payment-network
     healthcheck:
@@ -218,16 +218,16 @@ services:
       - prometheus
 
   # --- Application Services ---
-  payment-orchestrator:
+  orchestrator-service:
     build:
-      context: ./services/payment-orchestrator
+      context: ./services/orchestrator-service
       dockerfile: Dockerfile
-    container_name: payment-orchestrator
+    container_name: orchestrator-service
     ports:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-payment-orchestrator:5432/payment_orchestrator
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-orchestrator-service:5432/payment_orchestrator
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
@@ -236,7 +236,7 @@ services:
       - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
       - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
     depends_on:
-      postgres-payment-orchestrator:
+      postgres-orchestrator-service:
         condition: service_healthy
       kafka:
         condition: service_healthy
