@@ -1,5 +1,6 @@
 package dev.jkiakumbo.paymentorchestrator.fundsservice.domain
 
+import dev.jkiakumbo.paymentorchestrator.fundsservice.exception.InsufficientFundsException
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id

@@ -16,5 +16,6 @@ enum class PaymentState {
     COMPLETED,
     FAILED,
     COMPENSATING,
-    COMPENSATED
+    COMPENSATED,
+    CANCELLED
 }

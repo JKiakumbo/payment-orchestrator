@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'payment-services'
+    static_configs:
+      - targets:
+          - 'orchestrator-service:8080'
+          - 'fraud-service:8081'
+          - 'funds-service:8082'
+          - 'processor-service:8083'
+          - 'ledger-service:8084'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 10s
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'jaeger'
+    static_configs:
+      - targets: ['jaeger:14269']

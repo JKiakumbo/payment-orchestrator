@@ -37,17 +37,49 @@ class StateMachineService(
 
     fun startStateMachine(paymentId: UUID) {
         val stateMachine = getStateMachine(paymentId)
-        if (!stateMachine.isRunning) {
+        // Check if state machine is already started by looking at the initial state
+        if (stateMachine.state.id == PaymentState.INITIATED) {
             stateMachine.start()
             logger.debug("Started state machine for payment: $paymentId")
+        } else {
+            logger.debug("State machine for payment $paymentId already started, current state: ${stateMachine.state.id}")
         }
     }
 
     fun stopStateMachine(paymentId: UUID) {
         val stateMachine = getStateMachine(paymentId)
-        if (stateMachine.isRunning) {
+        // Check if state machine is not in a final state before stopping
+        if (!isFinalState(stateMachine.state.id)) {
             stateMachine.stop()
             logger.debug("Stopped state machine for payment: $paymentId")
+        } else {
+            logger.debug("State machine for payment $paymentId is in final state: ${stateMachine.state.id}")
         }
     }
+
+    fun resetStateMachine(paymentId: UUID) {
+        val stateMachine = getStateMachine(paymentId)
+        stateMachine.stop()
+        stateMachine.start()
+        logger.debug("Reset state machine for payment: $paymentId")
+    }
+
+    fun isInFinalState(paymentId: UUID): Boolean {
+        return isFinalState(getCurrentState(paymentId))
+    }
+
+    private fun isFinalState(state: PaymentState): Boolean {
+        return state == PaymentState.COMPLETED ||
+                state == PaymentState.FAILED ||
+                state == PaymentState.COMPENSATED ||
+                state == PaymentState.CANCELLED
+    }
+
+    fun getStateMachineHistory(paymentId: UUID): List<PaymentState> {
+        val stateMachine = getStateMachine(paymentId)
+        // In a real implementation, you might want to track state transitions
+        // For now, return current state
+        return listOf(stateMachine.state.id)
+    }
+
 }

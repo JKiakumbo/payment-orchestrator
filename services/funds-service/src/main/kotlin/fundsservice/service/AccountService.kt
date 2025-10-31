@@ -5,6 +5,7 @@ import dev.jkiakumbo.paymentorchestrator.fundsservice.domain.ReservationStatus
 import dev.jkiakumbo.paymentorchestrator.fundsservice.exception.AccountNotFoundException
 import dev.jkiakumbo.paymentorchestrator.fundsservice.exception.CurrencyMismatchException
 import dev.jkiakumbo.paymentorchestrator.fundsservice.repositories.AccountRepository
+import dev.jkiakumbo.paymentorchestrator.fundsservice.repositories.FundReservationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -12,7 +13,8 @@ import java.math.BigDecimal
 
 @Service
 class AccountService(
-    private val accountRepository: AccountRepository
+    private val accountRepository: AccountRepository,
+    private val fundReservationRepository: FundReservationRepository
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -49,7 +51,7 @@ class AccountService(
 
     @Transactional
     fun getTotalReservedAmount(customerId: String): BigDecimal {
-        return accountRepository.sumReservedAmountByCustomerAndStatus(customerId, ReservationStatus.RESERVED)
+        return fundReservationRepository.sumReservedAmountByCustomerAndStatus(customerId, ReservationStatus.RESERVED)
             ?: BigDecimal.ZERO
     }
 

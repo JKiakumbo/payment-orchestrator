@@ -6,6 +6,7 @@ import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.springframework.data.repository.CrudRepository
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.UUID
@@ -100,7 +101,7 @@ enum class TransactionStatus {
     CANCELLED
 }
 
-interface PaymentTransactionRepository : org.springframework.data.repository.CrudRepository<PaymentTransaction, UUID> {
+interface PaymentTransactionRepository : CrudRepository<PaymentTransaction, UUID> {
     fun findByPaymentId(paymentId: UUID): PaymentTransaction?
     fun findByExternalTransactionId(externalTransactionId: String): PaymentTransaction?
     fun findByStatusAndCreatedAtBefore(status: TransactionStatus, cutoff: LocalDateTime): List<PaymentTransaction>
