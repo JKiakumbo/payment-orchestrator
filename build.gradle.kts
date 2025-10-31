@@ -1,3 +1,5 @@
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 plugins {
     java
     id("org.springframework.boot") version "3.5.7" apply false
@@ -37,11 +39,24 @@ subprojects {
         implementation("org.jetbrains.kotlin:kotlin-reflect")
         implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
         implementation("org.springframework.kafka:spring-kafka:3.3.3")
-        implementation("org.springframework.statemachine:spring-statemachine-core:4.0.0")
         implementation("io.micrometer:micrometer-tracing-bridge-brave")
         implementation("io.zipkin.reporter2:zipkin-reporter-brave")
         runtimeOnly("org.postgresql:postgresql:42.7.4")
         testImplementation("org.springframework.boot:spring-boot-starter-test")
         testImplementation("org.springframework.kafka:spring-kafka-test")
+    }
+
+    tasks.test {
+        useJUnitPlatform()
+    }
+
+    tasks.getByName<BootJar>("bootJar") {
+        mainClass.set("${project.name}.jar")
+        enabled = true
+    }
+
+    // Disable plain jar task
+    tasks.jar {
+        enabled = false
     }
 }

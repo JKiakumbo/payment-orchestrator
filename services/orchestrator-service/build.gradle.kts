@@ -17,3 +17,7 @@ dependencies {
     testImplementation("org.springframework.kafka:spring-kafka-test")
     testImplementation("org.springframework.statemachine:spring-statemachine-test:4.0.0")
 }
+
+springBoot {
+    mainClass.set("dev.jkiakumbo.paymentorchestrator.OrchestratorApplication")
+}

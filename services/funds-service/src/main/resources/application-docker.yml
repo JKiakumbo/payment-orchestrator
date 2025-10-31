@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres-funds-service:5432/funds-service
+    username: postgres
+    password: password
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: funds-service
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+server:
+  port: 8082
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://jaeger:9411/api/v2/spans
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    dev.jkiakumbo: DEBUG
+    org.springframework.kafka: INFO

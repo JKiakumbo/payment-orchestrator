@@ -22,10 +22,12 @@ services:
     image: confluentinc/cp-kafka:7.8.0
     container_name: kafka
     depends_on:
-      zookeeper:
-        condition: service_healthy
+      - zookeeper
     ports:
+      - "9091:9091"
       - "9092:9092"
+      - "9093:9093"
+      - "9094:9094"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -35,8 +37,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_LOG_RETENTION_HOURS: 168
-      KAFKA_LOG_CLEANUP_POLICY: delete
     networks:
       - payment-network
     healthcheck:
@@ -61,17 +61,16 @@ services:
 
   # --- Database Services ---
   postgres-orchestrator-service:
-    image: postgres:18
+    image: postgres:16
     container_name: postgres-orchestrator-service
     environment:
-      POSTGRES_DB: payment_orchestrator
+      POSTGRES_DB: orchestrator_service
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
     volumes:
-      - postgres_payment_orchestrator_data:/var/lib/postgresql/data
-      - ./init-scripts/init-orchestrator-service.sql:/docker-entrypoint-initdb.d/init-orchestrator-service.sql
+      - postgres_orchestrator_service_data:/var/lib/postgresql/data
     networks:
       - payment-network
     healthcheck:
@@ -81,7 +80,7 @@ services:
       retries: 5
 
   postgres-fraud-service:
-    image: postgres:18
+    image: postgres:16
     container_name: postgres-fraud-service
     environment:
       POSTGRES_DB: fraud_service
@@ -91,7 +90,6 @@ services:
       - "5433:5432"
     volumes:
       - postgres_fraud_service_data:/var/lib/postgresql/data
-      - ./init-scripts/init-fraud-service.sql:/docker-entrypoint-initdb.d/init-fraud-service.sql
     networks:
       - payment-network
     healthcheck:
@@ -101,7 +99,7 @@ services:
       retries: 5
 
   postgres-funds-service:
-    image: postgres:18
+    image: postgres:16
     container_name: postgres-funds-service
     environment:
       POSTGRES_DB: funds_service
@@ -111,7 +109,6 @@ services:
       - "5434:5432"
     volumes:
       - postgres_funds_service_data:/var/lib/postgresql/data
-      - ./init-scripts/init-funds-service.sql:/docker-entrypoint-initdb.d/init-funds-service.sql
     networks:
       - payment-network
     healthcheck:
@@ -121,7 +118,7 @@ services:
       retries: 5
 
   postgres-processor-service:
-    image: postgres:18
+    image: postgres:16
     container_name: postgres-processor-service
     environment:
       POSTGRES_DB: processor_service
@@ -131,7 +128,6 @@ services:
       - "5435:5432"
     volumes:
       - postgres_processor_service_data:/var/lib/postgresql/data
-      - ./init-scripts/init-processor-service.sql:/docker-entrypoint-initdb.d/init-processor-service.sql
     networks:
       - payment-network
     healthcheck:
@@ -141,7 +137,7 @@ services:
       retries: 5
 
   postgres-ledger-service:
-    image: postgres:18
+    image: postgres:16
     container_name: postgres-ledger-service
     environment:
       POSTGRES_DB: ledger_service
@@ -151,7 +147,6 @@ services:
       - "5436:5432"
     volumes:
       - postgres_ledger_service_data:/var/lib/postgresql/data
-      - ./init-scripts/init-ledger-service.sql:/docker-entrypoint-initdb.d/init-ledger-service.sql
     networks:
       - payment-network
     healthcheck:
@@ -220,14 +215,14 @@ services:
   # --- Application Services ---
   orchestrator-service:
     build:
-      context: ./services/orchestrator-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/orchestrator-service.Dockerfile
     container_name: orchestrator-service
     ports:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-orchestrator-service:5432/payment_orchestrator
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-orchestrator-service:5432/orchestrator-service
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
@@ -236,12 +231,9 @@ services:
       - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
       - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
     depends_on:
-      postgres-orchestrator-service:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      jaeger:
-        condition: service_started
+      - postgres-orchestrator-service
+      - kafka
+      - jaeger
     networks:
       - payment-network
     healthcheck:
@@ -253,8 +245,8 @@ services:
 
   fraud-service:
     build:
-      context: ./services/fraud-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/fraud-service.Dockerfile
     container_name: fraud-service
     ports:
       - "8081:8081"
@@ -270,10 +262,8 @@ services:
       - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
       - SERVER_PORT=8081
     depends_on:
-      postgres-fraud-service:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
+      - postgres-fraud-service
+      - kafka
     networks:
       - payment-network
     healthcheck:
@@ -285,8 +275,8 @@ services:
 
   funds-service:
     build:
-      context: ./services/funds-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/funds-service.Dockerfile
     container_name: funds-service
     ports:
       - "8082:8082"
@@ -302,10 +292,8 @@ services:
       - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
       - SERVER_PORT=8082
     depends_on:
-      postgres-funds-service:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
+      - postgres-funds-service
+      - kafka
     networks:
       - payment-network
     healthcheck:
@@ -317,8 +305,8 @@ services:
 
   processor-service:
     build:
-      context: ./services/processor-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/processor-service.Dockerfile
     container_name: processor-service
     ports:
       - "8083:8083"
@@ -334,10 +322,8 @@ services:
       - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
       - SERVER_PORT=8083
     depends_on:
-      postgres-processor-service:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
+      - postgres-processor-service
+      - kafka
     networks:
       - payment-network
     healthcheck:
@@ -349,8 +335,8 @@ services:
 
   ledger-service:
     build:
-      context: ./services/ledger-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/ledger-service.Dockerfile
     container_name: ledger-service
     ports:
       - "8084:8084"
@@ -366,10 +352,8 @@ services:
       - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
       - SERVER_PORT=8084
     depends_on:
-      postgres-ledger-service:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
+      - postgres-ledger-service
+      - kafka
     networks:
       - payment-network
     healthcheck:
@@ -384,7 +368,7 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_payment_orchestrator_data:
+  postgres_orchestrator_service_data:
   postgres_fraud_service_data:
   postgres_funds_service_data:
   postgres_processor_service_data:
