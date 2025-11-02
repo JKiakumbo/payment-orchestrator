@@ -19,7 +19,7 @@ import java.util.*
 @Service
 class RetryService(
     private val paymentRepository: PaymentRepository,
-    private val stateMachineService: StateMachineService,
+    private val paymentStateMachineService: PaymentStateMachineService,
     private val kafkaTemplate: KafkaTemplate<String, Any>
 ) {
 
@@ -79,7 +79,7 @@ class RetryService(
 
         when (retry.step) {
             "FUNDS_RESERVATION" -> {
-                stateMachineService.sendEvent(payment.id, PaymentEvent.MANUAL_RETRY)
+                paymentStateMachineService.sendEvent(payment.id, PaymentEvent.MANUAL_RETRY)
                 payment.state = PaymentState.FUNDS_RESERVATION_PENDING
                 payment.markStep("FUNDS_RESERVATION")
 
@@ -102,7 +102,7 @@ class RetryService(
                 )
             }
             "PAYMENT_EXECUTION" -> {
-                stateMachineService.sendEvent(payment.id, PaymentEvent.MANUAL_RETRY)
+                paymentStateMachineService.sendEvent(payment.id, PaymentEvent.MANUAL_RETRY)
                 payment.state = PaymentState.PROCESSOR_EXECUTION_PENDING
                 payment.markStep("PAYMENT_EXECUTION")
 
@@ -126,7 +126,7 @@ class RetryService(
                 )
             }
             "LEDGER_UPDATE" -> {
-                stateMachineService.sendEvent(payment.id, PaymentEvent.MANUAL_RETRY)
+                paymentStateMachineService.sendEvent(payment.id, PaymentEvent.MANUAL_RETRY)
                 payment.state = PaymentState.LEDGER_UPDATE_PENDING
                 payment.markStep("LEDGER_UPDATE")
 

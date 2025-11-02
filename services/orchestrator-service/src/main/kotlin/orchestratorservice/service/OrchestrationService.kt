@@ -31,7 +31,7 @@ import java.util.UUID
 @Service
 class OrchestrationService(
     private val paymentRepository: PaymentRepository,
-    private val stateMachineService: StateMachineService,
+    private val paymentStateMachineService: PaymentStateMachineService,
     private val compensationService: CompensationService,
     private val retryService: RetryService,
     private val kafkaTemplate: KafkaTemplate<String, Any>,
@@ -68,8 +68,8 @@ class OrchestrationService(
         paymentRepository.save(payment)
 
         // Start state machine
-        stateMachineService.startStateMachine(paymentId)
-        stateMachineService.sendEvent(paymentId, PaymentEvent.FRAUD_CHECK_REQUESTED)
+        paymentStateMachineService.startStateMachine(paymentId)
+        paymentStateMachineService.sendEvent(paymentId, PaymentEvent.FRAUD_CHECK_REQUESTED)
 
         // Update payment state
         payment.state = PaymentState.FRAUD_CHECK_PENDING
@@ -108,7 +108,7 @@ class OrchestrationService(
 
         if (event.approved) {
             // Fraud check approved - proceed to funds reservation
-            stateMachineService.sendEvent(payment.id, PaymentEvent.FRAUD_CHECK_APPROVED)
+            paymentStateMachineService.sendEvent(payment.id, PaymentEvent.FRAUD_CHECK_APPROVED)
             payment.state = PaymentState.FRAUD_CHECK_COMPLETED
             payment.markStep("FUNDS_RESERVATION")
 
@@ -132,7 +132,7 @@ class OrchestrationService(
             logger.info("Fraud check approved, proceeding to funds reservation: ${payment.id}")
         } else {
             // Fraud check declined - fail payment
-            stateMachineService.sendEvent(payment.id, PaymentEvent.FRAUD_CHECK_DECLINED)
+            paymentStateMachineService.sendEvent(payment.id, PaymentEvent.FRAUD_CHECK_DECLINED)
             payment.state = PaymentState.FRAUD_CHECK_FAILED
             payment.markFailed("Fraud check declined: ${event.declineReason}")
 
@@ -153,7 +153,7 @@ class OrchestrationService(
             IllegalArgumentException("Payment not found: ${event.paymentId}")
         }
 
-        stateMachineService.sendEvent(payment.id, PaymentEvent.FUNDS_RESERVED)
+        paymentStateMachineService.sendEvent(payment.id, PaymentEvent.FUNDS_RESERVED)
         payment.state = PaymentState.FUNDS_RESERVED
         payment.reservationId = event.reservationId
         payment.markStep("PAYMENT_EXECUTION")
@@ -188,7 +188,7 @@ class OrchestrationService(
             IllegalArgumentException("Payment not found: ${event.paymentId}")
         }
 
-        stateMachineService.sendEvent(payment.id, PaymentEvent.FUNDS_RESERVATION_FAILED)
+        paymentStateMachineService.sendEvent(payment.id, PaymentEvent.FUNDS_RESERVATION_FAILED)
         payment.state = PaymentState.FUNDS_RESERVATION_FAILED
         payment.markFailed("Funds reservation failed: ${event.reason}")
 
@@ -212,7 +212,7 @@ class OrchestrationService(
             IllegalArgumentException("Payment not found: ${event.paymentId}")
         }
 
-        stateMachineService.sendEvent(payment.id, PaymentEvent.PROCESSOR_EXECUTED)
+        paymentStateMachineService.sendEvent(payment.id, PaymentEvent.PROCESSOR_EXECUTED)
         payment.state = PaymentState.PROCESSOR_EXECUTED
         payment.transactionId = event.transactionId
         payment.markStep("LEDGER_UPDATE")
@@ -247,7 +247,7 @@ class OrchestrationService(
             IllegalArgumentException("Payment not found: ${event.paymentId}")
         }
 
-        stateMachineService.sendEvent(payment.id, PaymentEvent.PROCESSOR_EXECUTION_FAILED)
+        paymentStateMachineService.sendEvent(payment.id, PaymentEvent.PROCESSOR_EXECUTION_FAILED)
         payment.state = PaymentState.PROCESSOR_EXECUTION_FAILED
         payment.markFailed("Payment execution failed: ${event.reason}")
 
@@ -271,7 +271,7 @@ class OrchestrationService(
             IllegalArgumentException("Payment not found: ${event.paymentId}")
         }
 
-        stateMachineService.sendEvent(payment.id, PaymentEvent.LEDGER_UPDATED)
+        paymentStateMachineService.sendEvent(payment.id, PaymentEvent.LEDGER_UPDATED)
         payment.state = PaymentState.COMPLETED
         payment.ledgerEntryId = event.ledgerEntryId
         payment.markCompleted()
@@ -304,7 +304,7 @@ class OrchestrationService(
             IllegalArgumentException("Payment not found: ${event.paymentId}")
         }
 
-        stateMachineService.sendEvent(payment.id, PaymentEvent.LEDGER_UPDATE_FAILED)
+        paymentStateMachineService.sendEvent(payment.id, PaymentEvent.LEDGER_UPDATE_FAILED)
         payment.state = PaymentState.LEDGER_UPDATE_FAILED
         payment.markFailed("Ledger update failed: ${event.reason}")
 
@@ -332,7 +332,7 @@ class OrchestrationService(
         // In a real implementation, you might track which services have completed compensation
         // For simplicity, we'll mark as compensated when we receive any compensation completed
 
-        stateMachineService.sendEvent(payment.id, PaymentEvent.COMPENSATION_COMPLETED)
+        paymentStateMachineService.sendEvent(payment.id, PaymentEvent.COMPENSATION_COMPLETED)
         payment.state = PaymentState.COMPENSATED
         payment.markCompensated("Payment compensated due to failure")
 

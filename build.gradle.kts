@@ -1,11 +1,10 @@
-import org.springframework.boot.gradle.tasks.bundling.BootJar
-
 plugins {
     java
     id("org.springframework.boot") version "3.5.7" apply false
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm") version "2.2.21" apply false
     kotlin("plugin.spring") version "2.2.21" apply false
+    kotlin("plugin.jpa") version "2.2.21" apply false
 }
 
 allprojects {
@@ -23,6 +22,7 @@ subprojects {
     apply(plugin = "io.spring.dependency-management")
     apply(plugin = "kotlin")
     apply(plugin = "kotlin-spring")
+    apply(plugin = "org.jetbrains.kotlin.plugin.jpa")
 
     java {
         toolchain {

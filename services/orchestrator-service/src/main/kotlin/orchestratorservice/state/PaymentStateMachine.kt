@@ -2,20 +2,25 @@ package dev.jkiakumbo.paymentorchestrator.orchestratorservice.state
 
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.Message
 import org.springframework.statemachine.StateMachine
 import org.springframework.statemachine.annotation.OnStateChanged
 import org.springframework.statemachine.annotation.WithStateMachine
-import org.springframework.statemachine.config.EnableStateMachine
+import org.springframework.statemachine.config.EnableStateMachineFactory
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter
+import org.springframework.statemachine.config.StateMachineFactory
+import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer
 import org.springframework.statemachine.listener.StateMachineListenerAdapter
+import org.springframework.statemachine.service.DefaultStateMachineService
+import org.springframework.statemachine.service.StateMachineService
 import org.springframework.statemachine.state.State
 import org.springframework.stereotype.Component
 
-@Component
-@EnableStateMachine
+@Configuration
+@EnableStateMachineFactory
 class PaymentStateMachineConfig : StateMachineConfigurerAdapter<PaymentState, PaymentEvent>() {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -134,6 +139,17 @@ class PaymentStateMachineConfig : StateMachineConfigurerAdapter<PaymentState, Pa
             .withExternal()
             .source(PaymentState.LEDGER_UPDATE_FAILED).target(PaymentState.LEDGER_UPDATE_PENDING)
             .event(PaymentEvent.MANUAL_RETRY)
+    }
+
+    override fun configure(config: StateMachineConfigurationConfigurer<PaymentState, PaymentEvent>) {
+        config
+            .withConfiguration()
+            .autoStartup(true)
+    }
+
+    @Bean
+    fun stateMachineService(stateMachineFactory: StateMachineFactory<PaymentState, PaymentEvent>): StateMachineService<PaymentState, PaymentEvent> {
+        return DefaultStateMachineService(stateMachineFactory)
     }
 
     @Bean
