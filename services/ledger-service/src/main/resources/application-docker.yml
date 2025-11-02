@@ -4,7 +4,7 @@ spring:
     username: postgres
     password: password
   kafka:
-    bootstrap-servers: kafka:9092
+    bootstrap-servers: kafka:90924
     consumer:
       group-id: ledger-service
       auto-offset-reset: earliest

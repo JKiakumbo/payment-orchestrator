@@ -18,7 +18,7 @@ spring:
         order_updates: true
     show-sql: false
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:9096
     consumer:
       group-id: fraud-service
       auto-offset-reset: earliest
