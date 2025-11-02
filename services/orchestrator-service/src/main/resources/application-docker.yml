@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://postgres-orchestrator-service:5432/orchestrator-service
+    url: jdbc:postgresql://postgres-orchestrator-service:5432/orchestrator_service
     username: postgres
     password: password
   kafka:

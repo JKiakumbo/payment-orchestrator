@@ -2,7 +2,7 @@ spring:
   application:
     name: orchestrator-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/orchestrator-service
+    url: jdbc:postgresql://localhost:5432/orchestrator_service
     username: postgres
     password: password
   jpa:
