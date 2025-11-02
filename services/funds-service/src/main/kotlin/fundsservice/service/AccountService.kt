@@ -23,7 +23,7 @@ class AccountService(
     fun getOrCreateAccount(customerId: String, currency: String, initialBalance: BigDecimal = BigDecimal("10000")): Account {
         return accountRepository.findByCustomerIdAndCurrency(customerId, currency) ?: run {
             val newAccount = Account(
-                id = customerId,
+                customerId = customerId,
                 balance = initialBalance,
                 availableBalance = initialBalance,
                 currency = currency

@@ -1,3 +1,6 @@
+import org.gradle.kotlin.dsl.withType
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -17,5 +20,10 @@ dependencies {
 }
 
 springBoot {
-    mainClass.set("dev.jkiakumbo.paymentorchestrator.FundsServiceApplication")
+    mainClass.set("dev.jkiakumbo.paymentorchestrator.FundsServiceApplicationKt")
+}
+
+tasks.withType<BootJar> {
+    mainClass.set("dev.jkiakumbo.paymentorchestrator.FundsServiceApplicationKt")
+    archiveFileName.set("funds-service-1.0.0.jar")
 }

@@ -1,3 +1,5 @@
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -12,4 +14,13 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql:42.7.4")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.kafka:spring-kafka-test")
+}
+
+springBoot {
+    mainClass.set("dev.jkiakumbo.paymentorchestrator.ProcessorServiceApplicationKt")
+}
+
+tasks.withType<BootJar> {
+    mainClass.set("dev.jkiakumbo.paymentorchestrator.ProcessorServiceApplicationKt")
+    archiveFileName.set("processor-service-1.0.0.jar")
 }

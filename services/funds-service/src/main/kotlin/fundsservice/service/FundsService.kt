@@ -125,7 +125,7 @@ class FundsService(
 
             // Reserve funds
             account.reserveFunds(reservation.amount)
-            accountService.getOrCreateAccount(account.id, account.currency) // This ensures account is saved
+            accountService.getOrCreateAccount(account.customerId, account.currency) // This ensures account is saved
 
             // Mark reservation as reserved
             reservation.markAsReserved()
@@ -158,7 +158,7 @@ class FundsService(
         if (reservation.status == ReservationStatus.RESERVED) {
             val account = accountService.getAccountWithLock(reservation.customerId)
             account.releaseFunds(reservation.amount)
-            accountService.getOrCreateAccount(account.id, account.currency)
+            accountService.getOrCreateAccount(account.customerId, account.currency)
 
             reservation.markAsReleased()
             reservationRepository.save(reservation)
@@ -180,7 +180,7 @@ class FundsService(
         if (reservation.status == ReservationStatus.RESERVED) {
             val account = accountService.getAccountWithLock(reservation.customerId)
             account.commitFunds(reservation.amount)
-            accountService.getOrCreateAccount(account.id, account.currency)
+            accountService.getOrCreateAccount(account.customerId, account.currency)
 
             reservation.markAsCommitted()
             reservationRepository.save(reservation)

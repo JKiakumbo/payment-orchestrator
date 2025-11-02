@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 )
 data class Account(
     @Id
-    val id: String, // customerId
+    val customerId: String, // customerId
 
     @Column(nullable = false, precision = 19, scale = 4)
     var balance: BigDecimal,

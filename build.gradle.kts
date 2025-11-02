@@ -50,11 +50,6 @@ subprojects {
         useJUnitPlatform()
     }
 
-    tasks.getByName<BootJar>("bootJar") {
-        mainClass.set("${project.name}.jar")
-        enabled = true
-    }
-
     // Disable plain jar task
     tasks.jar {
         enabled = false

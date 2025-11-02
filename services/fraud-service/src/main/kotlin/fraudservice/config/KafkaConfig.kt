@@ -44,7 +44,7 @@ class KafkaConfig {
             ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS to JsonDeserializer::class.java,
             JsonDeserializer.TRUSTED_PACKAGES to "*",
             JsonDeserializer.USE_TYPE_INFO_HEADERS to false,
-            JsonDeserializer.VALUE_DEFAULT_TYPE to "dev.jkiakumbo.fraudservice.events.FraudCheckRequestedEvent"
+            JsonDeserializer.VALUE_DEFAULT_TYPE to "dev.jkiakumbo.paymentorchestrator.fraudservice.events.FraudCheckRequestedEvent"
         )
         return DefaultKafkaConsumerFactory(props)
     }

@@ -1,3 +1,6 @@
+import org.gradle.kotlin.dsl.withType
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -19,5 +22,10 @@ dependencies {
 }
 
 springBoot {
-    mainClass.set("dev.jkiakumbo.paymentorchestrator.OrchestratorApplication")
+    mainClass.set("dev.jkiakumbo.paymentorchestrator.OrchestratorApplicationKt")
+}
+
+tasks.withType<BootJar> {
+    mainClass.set("dev.jkiakumbo.paymentorchestrator.OrchestratorApplicationKt")
+    archiveFileName.set("orchestrator-service-1.0.0.jar")
 }

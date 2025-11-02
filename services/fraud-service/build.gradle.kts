@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.withType
+import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -19,5 +21,10 @@ dependencies {
 }
 
 springBoot {
-    mainClass.set("dev.jkiakumbo.paymentorchestrator.FraudServiceApplication")
+    mainClass.set("dev.jkiakumbo.paymentorchestrator.FraudServiceApplicationKt")
+}
+
+tasks.withType<BootJar> {
+    mainClass.set("dev.jkiakumbo.paymentorchestrator.FraudServiceApplicationKt")
+    archiveFileName.set("fraud-service-1.0.0.jar")
 }
