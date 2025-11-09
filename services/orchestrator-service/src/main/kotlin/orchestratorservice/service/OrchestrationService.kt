@@ -1,5 +1,6 @@
 package dev.jkiakumbo.paymentorchestrator.orchestratorservice.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.jkiakumbo.paymentorchestrator.orchestratorservice.domain.Payment
 import dev.jkiakumbo.paymentorchestrator.orchestratorservice.domain.PaymentRepository
 import dev.jkiakumbo.paymentorchestrator.orchestratorservice.domain.PaymentState
@@ -22,6 +23,7 @@ import dev.jkiakumbo.paymentorchestrator.orchestratorservice.state.PaymentEvent
 import io.micrometer.tracing.Tracer
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -34,7 +36,8 @@ class OrchestrationService(
     private val paymentStateMachineService: PaymentStateMachineService,
     private val compensationService: CompensationService,
     private val retryService: RetryService,
-    private val kafkaTemplate: KafkaTemplate<String, Any>,
+    private val objectMapper: ObjectMapper,
+    private val kafkaTemplate: KafkaTemplate<String, String>,
     private val tracer: Tracer
 ) {
 
@@ -86,7 +89,8 @@ class OrchestrationService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(fraudEvent)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(fraudEvent))
+                .setHeader(KafkaHeaders.TOPIC, "fraud-check-requests")
                 .setHeader("paymentId", paymentId.toString())
                 .setHeader("correlationId", correlationId)
                 .setHeader("traceId", traceId)
@@ -122,6 +126,7 @@ class OrchestrationService(
 
             kafkaTemplate.send(
                 MessageBuilder.withPayload(fundsEvent)
+                    .setHeader(KafkaHeaders.TOPIC, "funds-reservation-requests")
                     .setHeader("paymentId", payment.id.toString())
                     .setHeader("correlationId", payment.correlationId)
                     .setHeader("traceId", payment.traceId)

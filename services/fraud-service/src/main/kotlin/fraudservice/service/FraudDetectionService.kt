@@ -1,5 +1,6 @@
 package dev.jkiakumbo.paymentorchestrator.fraudservice.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.jkiakumbo.paymentorchestrator.fraudservice.domain.FraudCheck
 import dev.jkiakumbo.paymentorchestrator.fraudservice.domain.FraudCheckRepository
 import dev.jkiakumbo.paymentorchestrator.fraudservice.domain.FraudCheckStatus
@@ -10,6 +11,7 @@ import dev.jkiakumbo.paymentorchestrator.fraudservice.events.ManualReviewRequire
 import dev.jkiakumbo.paymentorchestrator.fraudservice.exception.FraudCheckException
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
@@ -22,7 +24,8 @@ class FraudDetectionService(
     private val fraudCheckRepository: FraudCheckRepository,
     private val fraudRuleEngine: FraudRuleEngine,
     private val riskAssessmentService: RiskAssessmentService,
-    private val kafkaTemplate: KafkaTemplate<String, Any>,
+    private val objectMapper: ObjectMapper,
+    private val kafkaTemplate: KafkaTemplate<String, String>,
     private val compensationService: CompensationService
 ) {
 
@@ -179,7 +182,8 @@ class FraudDetectionService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "fraud-check-results")
                 .setHeader("paymentId", fraudCheck.paymentId.toString())
                 .setHeader("eventType", "FraudCheckCompletedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())
@@ -195,7 +199,8 @@ class FraudDetectionService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "fraud-check-results")
                 .setHeader("paymentId", fraudCheck.paymentId.toString())
                 .setHeader("eventType", "FraudCheckFailedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())
@@ -212,7 +217,8 @@ class FraudDetectionService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "manual-review-requests")
                 .setHeader("paymentId", fraudCheck.paymentId.toString())
                 .setHeader("eventType", "ManualReviewRequiredEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())

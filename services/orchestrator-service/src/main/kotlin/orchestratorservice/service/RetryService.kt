@@ -20,7 +20,7 @@ import java.util.*
 class RetryService(
     private val paymentRepository: PaymentRepository,
     private val paymentStateMachineService: PaymentStateMachineService,
-    private val kafkaTemplate: KafkaTemplate<String, Any>
+    private val kafkaTemplate: KafkaTemplate<String, String>
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)

@@ -33,7 +33,7 @@ class KafkaConfig {
     }
 
     @Bean
-    fun consumerFactory(): ConsumerFactory<String, Any> {
+    fun consumerFactory(): ConsumerFactory<String, String> {
         val props = mapOf(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ConsumerConfig.GROUP_ID_CONFIG to "fraud-service",
@@ -44,14 +44,14 @@ class KafkaConfig {
             ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS to JsonDeserializer::class.java,
             JsonDeserializer.TRUSTED_PACKAGES to "*",
             JsonDeserializer.USE_TYPE_INFO_HEADERS to false,
-            JsonDeserializer.VALUE_DEFAULT_TYPE to "dev.jkiakumbo.paymentorchestrator.fraudservice.events.FraudCheckRequestedEvent"
+            JsonDeserializer.VALUE_DEFAULT_TYPE to String::class.java
         )
         return DefaultKafkaConsumerFactory(props)
     }
 
     @Bean
-    fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, Any> {
-        val factory = ConcurrentKafkaListenerContainerFactory<String, Any>()
+    fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, String> {
+        val factory = ConcurrentKafkaListenerContainerFactory<String, String>()
         factory.consumerFactory = consumerFactory()
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
 
@@ -67,7 +67,7 @@ class KafkaConfig {
     }
 
     @Bean
-    fun producerFactory(): ProducerFactory<String, Any> {
+    fun producerFactory(): ProducerFactory<String, String> {
         val props = mapOf(
             ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
@@ -80,7 +80,7 @@ class KafkaConfig {
     }
 
     @Bean
-    fun kafkaTemplate(): KafkaTemplate<String, Any> {
+    fun kafkaTemplate(): KafkaTemplate<String, String> {
         return KafkaTemplate(producerFactory())
     }
 
