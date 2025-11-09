@@ -1,9 +1,11 @@
 package dev.jkiakumbo.paymentorchestrator.ledgerservice.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.jkiakumbo.paymentorchestrator.ledgerservice.events.CompensationCompletedEvent
 import dev.jkiakumbo.paymentorchestrator.ledgerservice.events.CompensationRequestedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -12,7 +14,8 @@ import java.util.UUID
 @Service
 class CompensationService(
     private val ledgerService: LedgerService,
-    private val kafkaTemplate: KafkaTemplate<String, Any>
+    private val objectMapper: ObjectMapper,
+    private val kafkaTemplate: KafkaTemplate<String, String>
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -40,7 +43,8 @@ class CompensationService(
         val event = CompensationCompletedEvent(paymentId = paymentId)
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "compensation-requests")
                 .setHeader("paymentId", paymentId.toString())
                 .setHeader("eventType", "CompensationCompletedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())

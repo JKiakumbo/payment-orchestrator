@@ -1,4 +1,5 @@
 package dev.jkiakumbo.paymentorchestrator.processorservice.service
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.jkiakumbo.paymentorchestrator.processorservice.domain.PaymentTransaction
 import dev.jkiakumbo.paymentorchestrator.processorservice.domain.PaymentTransactionRepository
 import dev.jkiakumbo.paymentorchestrator.processorservice.domain.TransactionStatus
@@ -6,6 +7,7 @@ import dev.jkiakumbo.paymentorchestrator.processorservice.events.CompensationCom
 import dev.jkiakumbo.paymentorchestrator.processorservice.events.CompensationRequestedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -14,7 +16,8 @@ import java.time.LocalDateTime
 @Service
 class CompensationService(
     private val transactionRepository: PaymentTransactionRepository,
-    private val kafkaTemplate: KafkaTemplate<String, Any>
+    private val objectMapper: ObjectMapper,
+    private val kafkaTemplate: KafkaTemplate<String, String>
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -74,7 +77,8 @@ class CompensationService(
         val event = CompensationCompletedEvent(paymentId = paymentId)
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "")
                 .setHeader("paymentId", paymentId.toString())
                 .setHeader("eventType", "CompensationCompletedEvent")
                 .setHeader("correlationId", java.util.UUID.randomUUID().toString())

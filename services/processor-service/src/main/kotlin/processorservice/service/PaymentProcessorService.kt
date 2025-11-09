@@ -1,5 +1,6 @@
 package dev.jkiakumbo.paymentorchestrator.processorservice.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.jkiakumbo.paymentorchestrator.processorservice.domain.PaymentTransaction
 import dev.jkiakumbo.paymentorchestrator.processorservice.domain.PaymentTransactionRepository
 import dev.jkiakumbo.paymentorchestrator.processorservice.domain.TransactionStatus
@@ -9,6 +10,7 @@ import dev.jkiakumbo.paymentorchestrator.processorservice.events.PaymentExecutio
 import dev.jkiakumbo.paymentorchestrator.processorservice.events.PaymentExecutionRetryEvent
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
@@ -20,7 +22,8 @@ import java.util.*
 @Service
 class PaymentProcessorService(
     private val transactionRepository: PaymentTransactionRepository,
-    private val kafkaTemplate: KafkaTemplate<String, Any>,
+    private val kafkaTemplate: KafkaTemplate<String, String>,
+    private val objectMapper: ObjectMapper,
     private val compensationService: CompensationService
 ) {
 
@@ -192,7 +195,8 @@ class PaymentProcessorService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "payment-execution-results")
                 .setHeader("paymentId", transaction.paymentId.toString())
                 .setHeader("eventType", "PaymentExecutedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())
@@ -208,7 +212,8 @@ class PaymentProcessorService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "payment-execution-results")
                 .setHeader("paymentId", transaction.paymentId.toString())
                 .setHeader("eventType", "PaymentExecutionFailedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())
@@ -224,7 +229,8 @@ class PaymentProcessorService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "processor-service-dlq")
                 .setHeader("paymentId", transaction.paymentId.toString())
                 .setHeader("eventType", "PaymentExecutionRetryEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())

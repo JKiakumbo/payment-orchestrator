@@ -1,5 +1,6 @@
 package dev.jkiakumbo.paymentorchestrator.ledgerservice.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.jkiakumbo.paymentorchestrator.ledgerservice.domain.LedgerEntry
 import dev.jkiakumbo.paymentorchestrator.ledgerservice.domain.LedgerEntryRepository
 import dev.jkiakumbo.paymentorchestrator.ledgerservice.domain.LedgerEntryStatus
@@ -11,6 +12,7 @@ import dev.jkiakumbo.paymentorchestrator.ledgerservice.exception.InvalidAccounti
 import dev.jkiakumbo.paymentorchestrator.ledgerservice.exception.LedgerException
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
@@ -23,7 +25,8 @@ import java.util.UUID
 class LedgerService(
     private val ledgerEntryRepository: LedgerEntryRepository,
     private val balanceService: BalanceService,
-    private val kafkaTemplate: KafkaTemplate<String, Any>
+    private val objectMapper: ObjectMapper,
+    private val kafkaTemplate: KafkaTemplate<String, String>
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -257,7 +260,8 @@ class LedgerService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "ledger-update-results")
                 .setHeader("paymentId", ledgerEntry.paymentId.toString())
                 .setHeader("eventType", "LedgerUpdatedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())
@@ -273,7 +277,8 @@ class LedgerService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "ledger-update-results")
                 .setHeader("paymentId", ledgerEntry.paymentId.toString())
                 .setHeader("eventType", "LedgerUpdateFailedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())
@@ -290,7 +295,8 @@ class LedgerService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "ledger-reversal-events")
                 .setHeader("paymentId", originalEntry.paymentId.toString())
                 .setHeader("eventType", "LedgerReversedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())

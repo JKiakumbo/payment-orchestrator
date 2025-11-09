@@ -179,6 +179,14 @@ class KafkaConfig {
             .build()
     }
 
+    @Bean
+    fun paymentCompletedTopic(): NewTopic {
+        return org.springframework.kafka.config.TopicBuilder.name("payment-completed")
+            .partitions(3)
+            .replicas(1)
+            .build()
+    }
+
     companion object {
         private val logger = org.slf4j.LoggerFactory.getLogger(KafkaConfig::class.java)
     }

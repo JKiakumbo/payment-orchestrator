@@ -292,7 +292,7 @@ class OrchestrationService(
 
         kafkaTemplate.send(
             MessageBuilder.withPayload(objectMapper.writeValueAsString(completedEvent))
-                .setHeader(KafkaHeaders.TOPIC, "")
+                .setHeader(KafkaHeaders.TOPIC, "payment-completed")
                 .setHeader("paymentId", payment.id.toString())
                 .setHeader("correlationId", payment.correlationId)
                 .setHeader("traceId", payment.traceId)
