@@ -1,5 +1,6 @@
 package dev.jkiakumbo.paymentorchestrator.fundsservice.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.jkiakumbo.paymentorchestrator.fundsservice.domain.FundReservation
 import dev.jkiakumbo.paymentorchestrator.fundsservice.domain.ReservationStatus
 import dev.jkiakumbo.paymentorchestrator.fundsservice.events.FundsCommittedEvent
@@ -14,6 +15,7 @@ import dev.jkiakumbo.paymentorchestrator.fundsservice.exception.ReservationNotFo
 import dev.jkiakumbo.paymentorchestrator.fundsservice.repositories.FundReservationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
@@ -26,7 +28,8 @@ import java.util.*
 class FundsService(
     private val reservationRepository: FundReservationRepository,
     private val accountService: AccountService,
-    private val kafkaTemplate: KafkaTemplate<String, Any>
+    private val objectMapper: ObjectMapper,
+    private val kafkaTemplate: KafkaTemplate<String, String>
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -110,7 +113,8 @@ class FundsService(
     fun processReservation(reservation: FundReservation) {
         try {
             // Get account with pessimistic lock to prevent concurrent modifications
-            val account = accountService.getAccountWithLock(reservation.customerId)
+//            val account = accountService.getAccountWithLock(reservation.customerId)
+            val account = accountService.getOrCreateAccount(reservation.customerId, reservation.currency)
 
             // Validate currency
             accountService.validateCurrency(account, reservation.currency)
@@ -224,7 +228,8 @@ class FundsService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "funds-reservation-results")
                 .setHeader("paymentId", reservation.paymentId.toString())
                 .setHeader("eventType", "FundsReservedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())
@@ -240,7 +245,8 @@ class FundsService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "funds-reservation-results")
                 .setHeader("paymentId", reservation.paymentId.toString())
                 .setHeader("eventType", "FundsReservationFailedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())
@@ -256,7 +262,8 @@ class FundsService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "compensation-requests")
                 .setHeader("paymentId", reservation.paymentId.toString())
                 .setHeader("eventType", "FundsReleasedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())
@@ -271,7 +278,8 @@ class FundsService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "funds-commit-requests")
                 .setHeader("paymentId", reservation.paymentId.toString())
                 .setHeader("eventType", "FundsCommittedEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())
@@ -286,7 +294,8 @@ class FundsService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(event)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(event))
+                .setHeader(KafkaHeaders.TOPIC, "funds-reservation-results")
                 .setHeader("paymentId", reservation.paymentId.toString())
                 .setHeader("eventType", "ReservationExpiredEvent")
                 .setHeader("correlationId", UUID.randomUUID().toString())

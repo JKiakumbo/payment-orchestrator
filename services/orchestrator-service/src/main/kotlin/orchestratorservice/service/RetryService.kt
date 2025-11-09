@@ -1,5 +1,6 @@
 package dev.jkiakumbo.paymentorchestrator.orchestratorservice.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.jkiakumbo.paymentorchestrator.orchestratorservice.domain.Payment
 import dev.jkiakumbo.paymentorchestrator.orchestratorservice.domain.PaymentRepository
 import dev.jkiakumbo.paymentorchestrator.orchestratorservice.domain.PaymentState
@@ -9,6 +10,7 @@ import dev.jkiakumbo.paymentorchestrator.orchestratorservice.events.PaymentExecu
 import dev.jkiakumbo.paymentorchestrator.orchestratorservice.state.PaymentEvent
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.support.KafkaHeaders
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -20,6 +22,7 @@ import java.util.*
 class RetryService(
     private val paymentRepository: PaymentRepository,
     private val paymentStateMachineService: PaymentStateMachineService,
+    private val objectMapper: ObjectMapper,
     private val kafkaTemplate: KafkaTemplate<String, String>
 ) {
 
@@ -91,7 +94,8 @@ class RetryService(
                 )
 
                 kafkaTemplate.send(
-                    MessageBuilder.withPayload(fundsEvent)
+                    MessageBuilder.withPayload(objectMapper.writeValueAsString(fundsEvent))
+                        .setHeader(KafkaHeaders.TOPIC, "payment-execution-requests")
                         .setHeader("paymentId", payment.id.toString())
                         .setHeader("correlationId", payment.correlationId)
                         .setHeader("traceId", payment.traceId)
@@ -115,7 +119,7 @@ class RetryService(
                 )
 
                 kafkaTemplate.send(
-                    MessageBuilder.withPayload(processorEvent)
+                    MessageBuilder.withPayload(objectMapper.writeValueAsString(processorEvent))
                         .setHeader("paymentId", payment.id.toString())
                         .setHeader("correlationId", payment.correlationId)
                         .setHeader("traceId", payment.traceId)
@@ -139,7 +143,7 @@ class RetryService(
                 )
 
                 kafkaTemplate.send(
-                    MessageBuilder.withPayload(ledgerEvent)
+                    MessageBuilder.withPayload(objectMapper.writeValueAsString(ledgerEvent))
                         .setHeader("paymentId", payment.id.toString())
                         .setHeader("correlationId", payment.correlationId)
                         .setHeader("traceId", payment.traceId)

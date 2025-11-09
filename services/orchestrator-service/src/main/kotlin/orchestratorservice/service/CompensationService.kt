@@ -1,4 +1,5 @@
 package dev.jkiakumbo.paymentorchestrator.orchestratorservice.service
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.jkiakumbo.paymentorchestrator.orchestratorservice.domain.Payment
 import dev.jkiakumbo.paymentorchestrator.orchestratorservice.events.CompensationTriggeredEvent
 import org.slf4j.LoggerFactory
@@ -9,6 +10,7 @@ import java.util.*
 
 @Service
 class CompensationService(
+    private val objectMapper: ObjectMapper,
     private val kafkaTemplate: KafkaTemplate<String, String>
 ) {
 
@@ -25,7 +27,7 @@ class CompensationService(
 
         // Send compensation event to all services that might need to rollback
         kafkaTemplate.send(
-            MessageBuilder.withPayload(compensationEvent)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(compensationEvent))
                 .setHeader("paymentId", payment.id.toString())
                 .setHeader("correlationId", payment.correlationId)
                 .setHeader("traceId", payment.traceId)

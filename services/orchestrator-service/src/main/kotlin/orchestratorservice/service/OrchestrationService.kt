@@ -125,7 +125,7 @@ class OrchestrationService(
             )
 
             kafkaTemplate.send(
-                MessageBuilder.withPayload(fundsEvent)
+                MessageBuilder.withPayload(objectMapper.writeValueAsString(fundsEvent))
                     .setHeader(KafkaHeaders.TOPIC, "funds-reservation-requests")
                     .setHeader("paymentId", payment.id.toString())
                     .setHeader("correlationId", payment.correlationId)
@@ -173,7 +173,8 @@ class OrchestrationService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(processorEvent)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(processorEvent))
+                .setHeader(KafkaHeaders.TOPIC, "payment-execution-requests")
                 .setHeader("paymentId", payment.id.toString())
                 .setHeader("correlationId", payment.correlationId)
                 .setHeader("traceId", payment.traceId)
@@ -232,7 +233,8 @@ class OrchestrationService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(ledgerEvent)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(ledgerEvent))
+                .setHeader(KafkaHeaders.TOPIC, "ledger-update-requests")
                 .setHeader("paymentId", payment.id.toString())
                 .setHeader("correlationId", payment.correlationId)
                 .setHeader("traceId", payment.traceId)
@@ -289,7 +291,8 @@ class OrchestrationService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(completedEvent)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(completedEvent))
+                .setHeader(KafkaHeaders.TOPIC, "")
                 .setHeader("paymentId", payment.id.toString())
                 .setHeader("correlationId", payment.correlationId)
                 .setHeader("traceId", payment.traceId)
@@ -348,7 +351,8 @@ class OrchestrationService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(compensatedEvent)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(compensatedEvent))
+                .setHeader(KafkaHeaders.TOPIC, "")
                 .setHeader("paymentId", payment.id.toString())
                 .setHeader("correlationId", payment.correlationId)
                 .setHeader("traceId", payment.traceId)
@@ -368,7 +372,8 @@ class OrchestrationService(
         )
 
         kafkaTemplate.send(
-            MessageBuilder.withPayload(failedEvent)
+            MessageBuilder.withPayload(objectMapper.writeValueAsString(failedEvent))
+                .setHeader(KafkaHeaders.TOPIC, "")
                 .setHeader("paymentId", payment.id.toString())
                 .setHeader("correlationId", payment.correlationId)
                 .setHeader("traceId", payment.traceId)
